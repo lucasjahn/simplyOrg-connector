@@ -64,11 +64,12 @@ class SimplyOrg_Event_Syncer {
 	 * Fetches events from the API and syncs them to WordPress.
 	 *
 	 * @since 1.0.0
-	 * @param string $start_date Optional start date (Y-m-d format).
-	 * @param string $end_date   Optional end date (Y-m-d format).
+	 * @param string   $start_date Optional start date (Y-m-d format).
+	 * @param string   $end_date   Optional end date (Y-m-d format).
+	 * @param int|null $limit      Optional limit on number of events to sync.
 	 * @return array|WP_Error Sync results on success, WP_Error on failure.
 	 */
-	public function sync_events( $start_date = null, $end_date = null ) {
+	public function sync_events( $start_date = null, $end_date = null, $limit = null ) {
 		// Fetch events from API.
 		$events = $this->api_client->fetch_calendar_events( $start_date, $end_date );
 
@@ -78,6 +79,11 @@ class SimplyOrg_Event_Syncer {
 
 		// Filter and normalize events.
 		$normalized_events = $this->normalize_events( $events );
+
+		// Apply limit if specified (for manual sync to avoid timeouts).
+		if ( null !== $limit && $limit > 0 ) {
+			$normalized_events = array_slice( $normalized_events, 0, $limit );
+		}
 
 		// Sync results.
 		$results = array(
@@ -241,10 +247,14 @@ class SimplyOrg_Event_Syncer {
 	 * @return int|WP_Error Post ID on success, WP_Error on failure.
 	 */
 	private function create_event( $event_data, $hash ) {
+		// Get configured post type.
+		$settings        = get_option( 'simplyorg_connector_settings', array() );
+		$event_post_type = isset( $settings['event_post_type'] ) ? $settings['event_post_type'] : 'seminar';
+
 		// Create the post.
 		$post_data = array(
 			'post_title'  => sanitize_text_field( $event_data['title'] ),
-			'post_type'   => 'seminar',
+			'post_type'   => $event_post_type,
 			'post_status' => 'draft', // Create as draft for review.
 			'post_author' => get_current_user_id(),
 		);

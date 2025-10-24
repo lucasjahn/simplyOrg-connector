@@ -166,6 +166,22 @@ class SimplyOrg_Admin {
 			'simplyorg_connector',
 			'simplyorg_sync_settings'
 		);
+
+		add_settings_field(
+			'event_post_type',
+			__( 'Event Post Type', 'simplyorg-connector' ),
+			array( $this, 'render_event_post_type_field' ),
+			'simplyorg_connector',
+			'simplyorg_sync_settings'
+		);
+
+		add_settings_field(
+			'trainer_post_type',
+			__( 'Trainer Post Type', 'simplyorg-connector' ),
+			array( $this, 'render_trainer_post_type_field' ),
+			'simplyorg_connector',
+			'simplyorg_sync_settings'
+		);
 	}
 
 	/**
@@ -192,6 +208,14 @@ class SimplyOrg_Admin {
 
 		$sanitized['sync_enabled'] = isset( $input['sync_enabled'] ) ? true : false;
 		$sanitized['debug_mode']   = isset( $input['debug_mode'] ) ? true : false;
+
+		if ( isset( $input['event_post_type'] ) ) {
+			$sanitized['event_post_type'] = sanitize_key( $input['event_post_type'] );
+		}
+
+		if ( isset( $input['trainer_post_type'] ) ) {
+			$sanitized['trainer_post_type'] = sanitize_key( $input['trainer_post_type'] );
+		}
 
 		// Validate credentials if all required fields are provided and not already validating.
 		if ( ! $this->is_validating && ! empty( $sanitized['api_base_url'] ) && ! empty( $sanitized['api_email'] ) && ! empty( $sanitized['api_password'] ) ) {
@@ -335,6 +359,58 @@ class SimplyOrg_Admin {
 			esc_html__( 'Enable debug logging', 'simplyorg-connector' ),
 			esc_html__( 'When enabled, detailed API requests and responses will be logged to the WordPress debug log. Make sure WP_DEBUG_LOG is enabled in wp-config.php.', 'simplyorg-connector' )
 		);
+	}
+
+	/**
+	 * Render event post type select field.
+	 *
+	 * @since 1.0.5
+	 */
+	public function render_event_post_type_field() {
+		$settings      = get_option( 'simplyorg_connector_settings', array() );
+		$selected      = isset( $settings['event_post_type'] ) ? $settings['event_post_type'] : 'seminar';
+		$post_types    = get_post_types( array( 'public' => true ), 'objects' );
+
+		echo '<select id="event_post_type" name="simplyorg_connector_settings[event_post_type]">';
+		foreach ( $post_types as $post_type ) {
+			if ( in_array( $post_type->name, array( 'attachment', 'revision', 'nav_menu_item' ), true ) ) {
+				continue;
+			}
+			printf(
+				'<option value="%s" %s>%s</option>',
+				esc_attr( $post_type->name ),
+				selected( $selected, $post_type->name, false ),
+				esc_html( $post_type->label )
+			);
+		}
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Select the post type to use for events/seminars. Default: seminar', 'simplyorg-connector' ) . '</p>';
+	}
+
+	/**
+	 * Render trainer post type select field.
+	 *
+	 * @since 1.0.5
+	 */
+	public function render_trainer_post_type_field() {
+		$settings      = get_option( 'simplyorg_connector_settings', array() );
+		$selected      = isset( $settings['trainer_post_type'] ) ? $settings['trainer_post_type'] : 'trainer';
+		$post_types    = get_post_types( array( 'public' => true ), 'objects' );
+
+		echo '<select id="trainer_post_type" name="simplyorg_connector_settings[trainer_post_type]">';
+		foreach ( $post_types as $post_type ) {
+			if ( in_array( $post_type->name, array( 'attachment', 'revision', 'nav_menu_item' ), true ) ) {
+				continue;
+			}
+			printf(
+				'<option value="%s" %s>%s</option>',
+				esc_attr( $post_type->name ),
+				selected( $selected, $post_type->name, false ),
+				esc_html( $post_type->label )
+			);
+		}
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Select the post type to use for trainers. Default: trainer', 'simplyorg-connector' ) . '</p>';
 	}
 
 	/**
@@ -483,13 +559,28 @@ class SimplyOrg_Admin {
 
 		check_admin_referer( 'simplyorg_manual_sync', 'simplyorg_sync_nonce' );
 
-		// Run sync.
+		// Validate post types exist before syncing.
+		$validation_error = $this->validate_post_types();
+		if ( is_wp_error( $validation_error ) ) {
+			set_transient(
+				'simplyorg_sync_message',
+				array(
+					'type'    => 'error',
+					'message' => $validation_error->get_error_message(),
+				),
+				30
+			);
+			wp_safe_redirect( admin_url( 'admin.php?page=simplyorg-connector' ) );
+			exit;
+		}
+
+		// Run sync (limited to 10 events for manual sync to avoid timeouts).
 		$current_year = gmdate( 'Y' );
 		$next_year    = $current_year + 1;
 		$start_date   = $current_year . '-01-01';
 		$end_date     = $next_year . '-12-31';
 
-		$results = $this->event_syncer->sync_events( $start_date, $end_date );
+		$results = $this->event_syncer->sync_events( $start_date, $end_date, 10 );
 
 		// Prepare message.
 		if ( is_wp_error( $results ) ) {
@@ -506,7 +597,7 @@ class SimplyOrg_Admin {
 				'type'    => 'success',
 				'message' => sprintf(
 					/* translators: 1: Created count, 2: Updated count, 3: Skipped count, 4: Error count */
-					__( 'Sync completed! Created: %1$d, Updated: %2$d, Skipped: %3$d, Errors: %4$d', 'simplyorg-connector' ),
+					__( 'Manual sync completed (limited to 10 events to avoid timeouts)! Created: %1$d, Updated: %2$d, Skipped: %3$d, Errors: %4$d. Full sync runs automatically via cron.', 'simplyorg-connector' ),
 					$results['created'],
 					$results['updated'],
 					$results['skipped'],
@@ -530,6 +621,41 @@ class SimplyOrg_Admin {
 		// Redirect back to settings page.
 		wp_safe_redirect( admin_url( 'admin.php?page=simplyorg-connector' ) );
 		exit;
+	}
+
+	/**
+	 * Validate that required post types exist.
+	 *
+	 * @since 1.0.5
+	 * @return true|WP_Error True if valid, WP_Error if post types don't exist.
+	 */
+	private function validate_post_types() {
+		$settings          = get_option( 'simplyorg_connector_settings', array() );
+		$event_post_type   = isset( $settings['event_post_type'] ) ? $settings['event_post_type'] : 'seminar';
+		$trainer_post_type = isset( $settings['trainer_post_type'] ) ? $settings['trainer_post_type'] : 'trainer';
+
+		$missing_types = array();
+
+		if ( ! post_type_exists( $event_post_type ) ) {
+			$missing_types[] = $event_post_type;
+		}
+
+		if ( ! post_type_exists( $trainer_post_type ) ) {
+			$missing_types[] = $trainer_post_type;
+		}
+
+		if ( ! empty( $missing_types ) ) {
+			return new WP_Error(
+				'post_types_missing',
+				sprintf(
+					/* translators: %s: Comma-separated list of missing post types */
+					__( 'The following post types do not exist: %s. Please create them or select different post types in settings.', 'simplyorg-connector' ),
+					implode( ', ', $missing_types )
+				)
+			);
+		}
+
+		return true;
 	}
 
 	/**
