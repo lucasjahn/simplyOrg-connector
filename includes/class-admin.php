@@ -181,7 +181,51 @@ class SimplyOrg_Admin {
 
 		$sanitized['sync_enabled'] = isset( $input['sync_enabled'] ) ? true : false;
 
+		// Validate credentials if all required fields are provided.
+		if ( ! empty( $sanitized['api_base_url'] ) && ! empty( $sanitized['api_email'] ) && ! empty( $sanitized['api_password'] ) ) {
+			$this->validate_credentials( $sanitized );
+		}
+
 		return $sanitized;
+	}
+
+	/**
+	 * Validate API credentials by attempting authentication.
+	 *
+	 * @since 1.0.0
+	 * @param array $settings Settings to validate.
+	 */
+	private function validate_credentials( $settings ) {
+		// Temporarily update settings for validation.
+		$old_settings = get_option( 'simplyorg_connector_settings', array() );
+		update_option( 'simplyorg_connector_settings', $settings );
+
+		// Create a new API client instance with the new settings.
+		$api_client = new SimplyOrg_API_Client();
+		$result = $api_client->authenticate();
+
+		// Restore old settings temporarily (they'll be saved again by WordPress).
+		update_option( 'simplyorg_connector_settings', $old_settings );
+
+		if ( is_wp_error( $result ) ) {
+			add_settings_error(
+				'simplyorg_connector_settings',
+				'credential_validation_failed',
+				sprintf(
+					/* translators: %s: Error message */
+					__( 'Credential validation failed: %s', 'simplyorg-connector' ),
+					$result->get_error_message()
+				),
+				'error'
+			);
+		} else {
+			add_settings_error(
+				'simplyorg_connector_settings',
+				'credential_validation_success',
+				__( '✓ Credentials validated successfully! Connection to SimplyOrg is working.', 'simplyorg-connector' ),
+				'success'
+			);
+		}
 	}
 
 	/**

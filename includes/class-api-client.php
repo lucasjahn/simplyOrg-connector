@@ -129,24 +129,36 @@ class SimplyOrg_API_Client {
 		}
 		$csrf_token = $matches[1];
 
-		// Extract cookies from response.
-		$initial_cookies = wp_remote_retrieve_cookies( $initial_response );
-		if ( empty( $initial_cookies ) ) {
+		// Extract cookies from response headers (raw format).
+		$response_headers = wp_remote_retrieve_headers( $initial_response );
+		$set_cookies = isset( $response_headers['set-cookie'] ) ? $response_headers['set-cookie'] : array();
+		
+		if ( empty( $set_cookies ) ) {
 			return new WP_Error(
 				'cookies_missing',
 				__( 'Failed to retrieve cookies from SimplyOrg.', 'simplyorg-connector' )
 			);
 		}
 
-		// Build cookie string and extract XSRF token.
-		$cookie_parts = array();
-		foreach ( $initial_cookies as $cookie ) {
-			$cookie_parts[] = $cookie->name . '=' . $cookie->value;
-			if ( 'XSRF-TOKEN' === $cookie->name ) {
-				$this->xsrf_token = $cookie->value;
+		// Ensure set_cookies is an array.
+		if ( ! is_array( $set_cookies ) ) {
+			$set_cookies = array( $set_cookies );
+		}
+
+		// Build cookie string - join all cookies with '; '.
+		$initial_cookie_string = implode( '; ', $set_cookies );
+		
+		// Extract XSRF token from first cookie (as per N8N workflow).
+		// Format: "XSRF-TOKEN=value; path=/; ...".
+		if ( ! empty( $set_cookies[0] ) ) {
+			$first_cookie_parts = explode( ';', $set_cookies[0] );
+			if ( ! empty( $first_cookie_parts[0] ) ) {
+				$cookie_pair = explode( '=', $first_cookie_parts[0], 2 );
+				if ( count( $cookie_pair ) === 2 ) {
+					$this->xsrf_token = $cookie_pair[1];
+				}
 			}
 		}
-		$initial_cookie_string = implode( '; ', $cookie_parts );
 
 		// Step 2: Perform login.
 		$login_response = wp_remote_post(
@@ -178,8 +190,9 @@ class SimplyOrg_API_Client {
 			);
 		}
 
+		// Check login status - SimplyOrg returns 204 (No Content) on successful login.
 		$login_status = wp_remote_retrieve_response_code( $login_response );
-		if ( 200 !== $login_status ) {
+		if ( 204 !== $login_status && 200 !== $login_status ) {
 			return new WP_Error(
 				'login_invalid',
 				sprintf(
@@ -190,24 +203,35 @@ class SimplyOrg_API_Client {
 			);
 		}
 
-		// Step 3: Extract authentication cookies.
-		$auth_cookies = wp_remote_retrieve_cookies( $login_response );
-		if ( empty( $auth_cookies ) ) {
+		// Step 3: Extract authentication cookies from response headers.
+		$login_headers = wp_remote_retrieve_headers( $login_response );
+		$auth_set_cookies = isset( $login_headers['set-cookie'] ) ? $login_headers['set-cookie'] : array();
+		
+		if ( empty( $auth_set_cookies ) ) {
 			return new WP_Error(
 				'auth_cookies_missing',
 				__( 'Failed to retrieve authentication cookies after login.', 'simplyorg-connector' )
 			);
 		}
 
-		// Build authenticated cookie string.
-		$auth_cookie_parts = array();
-		foreach ( $auth_cookies as $cookie ) {
-			$auth_cookie_parts[] = $cookie->name . '=' . $cookie->value;
-			if ( 'XSRF-TOKEN' === $cookie->name ) {
-				$this->xsrf_token = $cookie->value;
+		// Ensure auth_set_cookies is an array.
+		if ( ! is_array( $auth_set_cookies ) ) {
+			$auth_set_cookies = array( $auth_set_cookies );
+		}
+
+		// Build authenticated cookie string - join all cookies with '; '.
+		$this->cookies = implode( '; ', $auth_set_cookies );
+		
+		// Extract XSRF token from first cookie.
+		if ( ! empty( $auth_set_cookies[0] ) ) {
+			$first_cookie_parts = explode( ';', $auth_set_cookies[0] );
+			if ( ! empty( $first_cookie_parts[0] ) ) {
+				$cookie_pair = explode( '=', $first_cookie_parts[0], 2 );
+				if ( count( $cookie_pair ) === 2 ) {
+					$this->xsrf_token = $cookie_pair[1];
+				}
 			}
 		}
-		$this->cookies = implode( '; ', $auth_cookie_parts );
 
 		$this->is_authenticated = true;
 
