@@ -48,6 +48,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.10] - 2025-10-24
+
+### Added
+- **Configurable date range** for event synchronization
+- Sync Start Date field in settings (defaults to today)
+- Sync End Date field in settings (defaults to end of next year)
+- HTML5 date picker inputs for easy date selection
+- Date range persists across manual and automatic syncs
+
+### Changed
+- Manual sync now uses configured date range instead of hardcoded current/next year
+- Automatic cron sync now uses configured date range
+- API request uses dates from settings for better control over synced events
+
 ## [1.0.9] - 2025-10-24
 
 ### Fixed
@@ -192,6 +206,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.10]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.10
 [1.0.9]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.9
 [1.0.8]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.8
 [1.0.7]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.7
