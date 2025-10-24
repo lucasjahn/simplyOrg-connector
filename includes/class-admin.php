@@ -37,6 +37,13 @@ class SimplyOrg_Admin {
 	private $trainer_syncer;
 
 	/**
+	 * Flag to prevent recursive validation.
+	 *
+	 * @var bool
+	 */
+	private $is_validating = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 1.0.0
@@ -181,8 +188,8 @@ class SimplyOrg_Admin {
 
 		$sanitized['sync_enabled'] = isset( $input['sync_enabled'] ) ? true : false;
 
-		// Validate credentials if all required fields are provided.
-		if ( ! empty( $sanitized['api_base_url'] ) && ! empty( $sanitized['api_email'] ) && ! empty( $sanitized['api_password'] ) ) {
+		// Validate credentials if all required fields are provided and not already validating.
+		if ( ! $this->is_validating && ! empty( $sanitized['api_base_url'] ) && ! empty( $sanitized['api_email'] ) && ! empty( $sanitized['api_password'] ) ) {
 			$this->validate_credentials( $sanitized );
 		}
 
@@ -196,16 +203,22 @@ class SimplyOrg_Admin {
 	 * @param array $settings Settings to validate.
 	 */
 	private function validate_credentials( $settings ) {
+		// Set flag to prevent recursive validation.
+		$this->is_validating = true;
+
 		// Temporarily update settings for validation.
 		$old_settings = get_option( 'simplyorg_connector_settings', array() );
-		update_option( 'simplyorg_connector_settings', $settings );
+		update_option( 'simplyorg_connector_settings', $settings, false ); // Use autoload=false to prevent caching issues.
 
 		// Create a new API client instance with the new settings.
 		$api_client = new SimplyOrg_API_Client();
 		$result = $api_client->authenticate();
 
 		// Restore old settings temporarily (they'll be saved again by WordPress).
-		update_option( 'simplyorg_connector_settings', $old_settings );
+		update_option( 'simplyorg_connector_settings', $old_settings, false );
+
+		// Reset validation flag.
+		$this->is_validating = false;
 
 		if ( is_wp_error( $result ) ) {
 			add_settings_error(
