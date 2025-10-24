@@ -199,21 +199,6 @@ class SimplyOrg_Event_Syncer {
 					}
 				}
 
-				$event_groups[ $event_id ] = array(
-					'simplyorg_id'   => $event_id,
-					'title'          => $clean_title,
-					'event_name'     => isset( $event['event_name'] ) ? $event['event_name'] : '',
-					'event_category' => isset( $event['event_category_name'] ) ? $event['event_category_name'] : '',
-					'trainer_names'  => $trainer_names,
-					'trainer_ids'    => $trainer_ids,
-					'dates'          => array(),
-				);
-			}
-
-			// Add date information.
-			// Use schedule_date for the actual day (not event_startdate which is the overall range).
-			$actual_date = isset( $event['schedule_date'] ) ? $event['schedule_date'] : $event['event_startdate'];
-
 			// Detect if this is a module (part of "Ausbildungen" training course).
 			$is_module = false;
 			if ( isset( $event['event_category_name'] ) && 'Ausbildungen' === $event['event_category_name'] ) {
@@ -224,29 +209,73 @@ class SimplyOrg_Event_Syncer {
 				$is_module = true;
 			}
 
-			$date_entry = array(
-				'start_date' => $actual_date,
-				'end_date'   => $actual_date, // Same day for individual schedule entries.
-				'start_time' => '09:00:00',
-				'end_time'   => '16:00:00',
-				'day_number' => isset( $event['event_days'] ) ? intval( $event['event_days'] ) : 1,
-				'is_module'  => $is_module,
+			$event_groups[ $event_id ] = array(
+				'simplyorg_id'    => $event_id,
+				'title'           => $clean_title,
+				'event_name'      => isset( $event['event_name'] ) ? $event['event_name'] : '',
+				'event_category'  => isset( $event['event_category_name'] ) ? $event['event_category_name'] : '',
+				'trainer_names'   => $trainer_names,
+				'trainer_ids'     => $trainer_ids,
+				'is_module'       => $is_module,
+				'event_startdate' => isset( $event['event_startdate'] ) ? $event['event_startdate'] : '',
+				'event_enddate'   => isset( $event['event_enddate'] ) ? $event['event_enddate'] : '',
+				'dates'           => array(),
+				'schedule_slots'  => array(),
+			);
+			}
+
+			// Store schedule slot information for later processing.
+			$schedule_info = array(
+				'schedule_date' => isset( $event['schedule_date'] ) ? $event['schedule_date'] : $event['event_startdate'],
+				'start_time'    => '09:00:00',
+				'end_time'      => '16:00:00',
+				'day_number'    => isset( $event['event_days'] ) ? intval( $event['event_days'] ) : 1,
 			);
 
 			// Extract time from schedule_slot.
 			if ( isset( $event['schedule_slot'][0] ) ) {
 				$slot = $event['schedule_slot'][0];
 				if ( isset( $slot['start_time'] ) ) {
-					// Remove microseconds from time.
-					$date_entry['start_time'] = substr( $slot['start_time'], 0, 8 );
+					$schedule_info['start_time'] = substr( $slot['start_time'], 0, 8 );
 				}
 				if ( isset( $slot['end_time'] ) ) {
-					$date_entry['end_time'] = substr( $slot['end_time'], 0, 8 );
+					$schedule_info['end_time'] = substr( $slot['end_time'], 0, 8 );
 				}
 			}
 
-			$event_groups[ $event_id ]['dates'][] = $date_entry;
+			$event_groups[ $event_id ]['schedule_slots'][] = $schedule_info;
 		}
+
+		// Process schedule slots into date entries.
+		foreach ( $event_groups as &$event_group ) {
+			if ( $event_group['is_module'] && count( $event_group['schedule_slots'] ) > 1 ) {
+				// For multi-day modules: Create ONE date entry spanning the entire period.
+				$first_slot = $event_group['schedule_slots'][0];
+				$last_slot  = end( $event_group['schedule_slots'] );
+
+				$event_group['dates'][] = array(
+					'start_date' => $event_group['event_startdate'],
+					'end_date'   => $event_group['event_enddate'],
+					'start_time' => $first_slot['start_time'],
+					'end_time'   => $last_slot['end_time'],
+					'day_number' => count( $event_group['schedule_slots'] ),
+					'is_module'  => true,
+				);
+			} else {
+				// For regular events or single-day modules: Create separate date entries.
+				foreach ( $event_group['schedule_slots'] as $slot ) {
+					$event_group['dates'][] = array(
+						'start_date' => $slot['schedule_date'],
+						'end_date'   => $slot['schedule_date'],
+						'start_time' => $slot['start_time'],
+						'end_time'   => $slot['end_time'],
+						'day_number' => $slot['day_number'],
+						'is_module'  => $event_group['is_module'],
+					);
+				}
+			}
+		}
+		unset( $event_group );
 
 		// Sort dates within each event group.
 		foreach ( $event_groups as &$event_group ) {
