@@ -313,12 +313,11 @@ class SimplyOrg_API_Client {
 		$response = wp_remote_get(
 			$url,
 			array(
-				'timeout' => 60,
+				'timeout' => 300,
 				'headers' => array(
-					'Cookie'           => $this->cookies,
-					'X-CSRF-Token'     => $this->xsrf_token,
-					'Accept'           => 'application/json, text/javascript, */*; q=0.01',
-					'X-Requested-With' => 'XMLHttpRequest',
+					'Cookie'  => $this->cookies,
+					'X-CSRF-Token' => $this->xsrf_token,
+					'Accept'  => 'application/json,text/html,application/xhtml+xml,application/xml,text/*;q=0.9, image/*;q=0.8, */*;q=0.7',
 				),
 			)
 		);
