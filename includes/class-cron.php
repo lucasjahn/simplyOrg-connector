@@ -76,12 +76,12 @@ class SimplyOrg_Cron {
 
 		$this->log( 'Starting daily sync...' );
 
-		// Sync events for the current year and next year.
-		$current_year = gmdate( 'Y' );
-		$next_year    = $current_year + 1;
-		$start_date   = $current_year . '-01-01';
-		$end_date     = $next_year . '-12-31';
+		// Get date range from settings.
+		$settings   = get_option( 'simplyorg_connector_settings', array() );
+		$start_date = isset( $settings['sync_start_date'] ) ? $settings['sync_start_date'] : gmdate( 'Y-m-d' );
+		$end_date   = isset( $settings['sync_end_date'] ) ? $settings['sync_end_date'] : gmdate( 'Y-12-31', strtotime( '+1 year' ) );
 
+		// Sync events with configured date range.
 		$results = $this->event_syncer->sync_events( $start_date, $end_date );
 
 		if ( is_wp_error( $results ) ) {

@@ -182,6 +182,22 @@ class SimplyOrg_Admin {
 			'simplyorg-connector',
 			'simplyorg_sync_settings'
 		);
+
+		add_settings_field(
+			'sync_start_date',
+			__( 'Sync Start Date', 'simplyorg-connector' ),
+			array( $this, 'render_sync_start_date_field' ),
+			'simplyorg-connector',
+			'simplyorg_sync_settings'
+		);
+
+		add_settings_field(
+			'sync_end_date',
+			__( 'Sync End Date', 'simplyorg-connector' ),
+			array( $this, 'render_sync_end_date_field' ),
+			'simplyorg-connector',
+			'simplyorg_sync_settings'
+		);
 	}
 
 	/**
@@ -213,11 +229,19 @@ class SimplyOrg_Admin {
 			$sanitized['event_post_type'] = sanitize_key( $input['event_post_type'] );
 		}
 
-		if ( isset( $input['trainer_post_type'] ) ) {
-			$sanitized['trainer_post_type'] = sanitize_key( $input['trainer_post_type'] );
-		}
+	if ( isset( $input['trainer_post_type'] ) ) {
+		$sanitized['trainer_post_type'] = sanitize_key( $input['trainer_post_type'] );
+	}
 
-		// Validate credentials if all required fields are provided and not already validating.
+	if ( isset( $input['sync_start_date'] ) ) {
+		$sanitized['sync_start_date'] = sanitize_text_field( $input['sync_start_date'] );
+	}
+
+	if ( isset( $input['sync_end_date'] ) ) {
+		$sanitized['sync_end_date'] = sanitize_text_field( $input['sync_end_date'] );
+	}
+
+	// Validate credentials if all required fields are provided and not already validating.
 		if ( ! $this->is_validating && ! empty( $sanitized['api_base_url'] ) && ! empty( $sanitized['api_email'] ) && ! empty( $sanitized['api_password'] ) ) {
 			$this->validate_credentials( $sanitized );
 		}
@@ -414,6 +438,38 @@ class SimplyOrg_Admin {
 	}
 
 	/**
+	 * Render sync start date field.
+	 *
+	 * @since 1.0.10
+	 */
+	public function render_sync_start_date_field() {
+		$settings = get_option( 'simplyorg_connector_settings', array() );
+		$value    = isset( $settings['sync_start_date'] ) ? $settings['sync_start_date'] : gmdate( 'Y-m-d' );
+
+		printf(
+			'<input type="date" id="sync_start_date" name="simplyorg_connector_settings[sync_start_date]" value="%s" class="regular-text" /><p class="description">%s</p>',
+			esc_attr( $value ),
+			esc_html__( 'Events starting from this date will be synced. Format: YYYY-MM-DD', 'simplyorg-connector' )
+		);
+	}
+
+	/**
+	 * Render sync end date field.
+	 *
+	 * @since 1.0.10
+	 */
+	public function render_sync_end_date_field() {
+		$settings = get_option( 'simplyorg_connector_settings', array() );
+		$value    = isset( $settings['sync_end_date'] ) ? $settings['sync_end_date'] : gmdate( 'Y-12-31', strtotime( '+1 year' ) );
+
+		printf(
+			'<input type="date" id="sync_end_date" name="simplyorg_connector_settings[sync_end_date]" value="%s" class="regular-text" /><p class="description">%s</p>',
+			esc_attr( $value ),
+			esc_html__( 'Events up to this date will be synced. Format: YYYY-MM-DD', 'simplyorg-connector' )
+		);
+	}
+
+	/**
 	 * Render settings page.
 	 *
 	 * @since 1.0.0
@@ -574,12 +630,12 @@ class SimplyOrg_Admin {
 			exit;
 		}
 
-		// Run sync (limited to 10 events for manual sync to avoid timeouts).
-		$current_year = gmdate( 'Y' );
-		$next_year    = $current_year + 1;
-		$start_date   = $current_year . '-01-01';
-		$end_date     = $next_year . '-12-31';
+		// Get date range from settings.
+		$settings   = get_option( 'simplyorg_connector_settings', array() );
+		$start_date = isset( $settings['sync_start_date'] ) ? $settings['sync_start_date'] : gmdate( 'Y-m-d' );
+		$end_date   = isset( $settings['sync_end_date'] ) ? $settings['sync_end_date'] : gmdate( 'Y-12-31', strtotime( '+1 year' ) );
 
+		// Run sync (limited to 10 events for manual sync to avoid timeouts).
 		$results = $this->event_syncer->sync_events( $start_date, $end_date, 10 );
 
 		// Prepare message.
