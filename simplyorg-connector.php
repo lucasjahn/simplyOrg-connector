@@ -3,7 +3,7 @@
  * Plugin Name: SimplyOrg Connector
  * Plugin URI: https://github.com/lucasjahn/simplyOrg-connector
  * Description: Syncs events and trainers from SimplyOrg event management platform to WordPress custom post types with ACF fields.
- * Version: 1.0.5
+ * Version: 1.0.6
  * Author: Lucas Jahn
  * Author URI: https://krautnerds.de
  * License: GPL v2 or later
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'SIMPLYORG_CONNECTOR_VERSION', '1.0.5' );
+define( 'SIMPLYORG_CONNECTOR_VERSION', '1.0.6' );
 define( 'SIMPLYORG_CONNECTOR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SIMPLYORG_CONNECTOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'SIMPLYORG_CONNECTOR_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );

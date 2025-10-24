@@ -48,6 +48,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.6] - 2025-10-24
+
+### Fixed
+- **CRITICAL:** Changed API request from POST to GET with query parameters
+- Match exact browser request format (as shown in curl example)
+- Add X-Requested-With header for AJAX requests
+- Update Accept header to match browser exactly
+- Should finally resolve 405 Method Not Allowed error
+- N8N workflow was misleading - actual API uses GET, not POST
+
 ## [1.0.5] - 2025-10-24
 
 ### Added
@@ -139,6 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.6]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.6
 [1.0.5]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.5
 [1.0.4]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.4
 [1.0.3]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.3
