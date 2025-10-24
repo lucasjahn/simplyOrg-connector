@@ -48,6 +48,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.2] - 2025-10-24
+
+### Fixed
+- Fixed memory exhaustion error when saving credentials
+- Added validation flag to prevent recursive validation loop
+- Use autoload=false when temporarily updating options during validation
+- Prevent infinite loop when update_option triggers sanitize callback
+
 ## [1.0.1] - 2025-10-24
 
 ### Fixed
@@ -88,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.2]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.2
 [1.0.1]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.1
 [1.0.0]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.0
 
