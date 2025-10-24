@@ -363,14 +363,37 @@ class SimplyOrg_API_Client {
 		$data          = json_decode( $response_body, true );
 
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
+			$this->debug_log( 'JSON decode failed', array(
+				'error'         => json_last_error_msg(),
+				'response_body' => substr( $response_body, 0, 500 ),
+			) );
 			return new WP_Error(
 				'json_decode_failed',
 				__( 'Failed to decode API response.', 'simplyorg-connector' )
 			);
 		}
 
+		$this->debug_log( 'API response decoded', array(
+			'data_keys'   => is_array( $data ) ? array_keys( $data ) : 'not an array',
+			'data_type'   => gettype( $data ),
+			'body_exists' => isset( $data['body'] ),
+			'body_count'  => isset( $data['body'] ) && is_array( $data['body'] ) ? count( $data['body'] ) : 'N/A',
+		) );
+
 		// Return the body array which contains the events.
-		return isset( $data['body'] ) ? $data['body'] : array();
+		if ( isset( $data['body'] ) && is_array( $data['body'] ) ) {
+			$this->debug_log( sprintf( 'Returning %d events from API', count( $data['body'] ) ) );
+			return $data['body'];
+		}
+
+		// If no body key, maybe the data itself is the array of events.
+		if ( is_array( $data ) ) {
+			$this->debug_log( sprintf( 'No body key found, returning data array with %d items', count( $data ) ) );
+			return $data;
+		}
+
+		$this->debug_log( 'No events found in response' );
+		return array();
 	}
 
 	/**
