@@ -48,6 +48,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.7] - 2025-10-24
+
+### Fixed
+- Fixed settings page slug inconsistency causing Sync Settings section to not display
+- Post type dropdowns now visible in settings
+
+### Added
+- Comprehensive logging throughout event syncer when debug mode enabled
+- Log API fetch status and event counts
+- Log normalization and filtering details
+- Log each event sync with result (created/updated/skipped)
+- Log skip reasons (no data, Einmietung category, no trainer)
+- All logs prefixed with [SimplyOrg Event Syncer]
+
+### Changed
+- Logging only active when both debug mode enabled AND WP_DEBUG_LOG is true
+- More detailed sync progress tracking in debug log
+
 ## [1.0.6] - 2025-10-24
 
 ### Fixed
@@ -149,6 +167,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.7]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.7
 [1.0.6]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.6
 [1.0.5]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.5
 [1.0.4]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.4
