@@ -148,19 +148,23 @@ class SimplyOrg_Admin {
 			'simplyorg_sync_settings',
 			__( 'Sync Settings', 'simplyorg-connector' ),
 			array( $this, 'render_sync_settings_section' ),
-			'simplyorg-connector'
+			'simplyorg_connector'
 		);
 
 		add_settings_field(
 			'sync_enabled',
 			__( 'Enable Automatic Sync', 'simplyorg-connector' ),
-			array( $this, 'render_checkbox_field' ),
-			'simplyorg-connector',
-			'simplyorg_sync_settings',
-			array(
-				'label_for'   => 'sync_enabled',
-				'description' => __( 'Enable daily automatic synchronization at 6:00 AM.', 'simplyorg-connector' ),
-			)
+			array( $this, 'render_sync_enabled_field' ),
+			'simplyorg_connector',
+			'simplyorg_sync_settings'
+		);
+
+		add_settings_field(
+			'debug_mode',
+			__( 'Debug Mode', 'simplyorg-connector' ),
+			array( $this, 'render_debug_mode_field' ),
+			'simplyorg_connector',
+			'simplyorg_sync_settings'
 		);
 	}
 
@@ -187,6 +191,7 @@ class SimplyOrg_Admin {
 		}
 
 		$sanitized['sync_enabled'] = isset( $input['sync_enabled'] ) ? true : false;
+		$sanitized['debug_mode']   = isset( $input['debug_mode'] ) ? true : false;
 
 		// Validate credentials if all required fields are provided and not already validating.
 		if ( ! $this->is_validating && ! empty( $sanitized['api_base_url'] ) && ! empty( $sanitized['api_email'] ) && ! empty( $sanitized['api_password'] ) ) {
@@ -300,23 +305,35 @@ class SimplyOrg_Admin {
 	}
 
 	/**
-	 * Render checkbox field.
+	 * Render sync enabled checkbox field.
 	 *
 	 * @since 1.0.0
-	 * @param array $args Field arguments.
 	 */
-	public function render_checkbox_field( $args ) {
-		$settings    = get_option( 'simplyorg_connector_settings', array() );
-		$field_id    = $args['label_for'];
-		$checked     = isset( $settings[ $field_id ] ) ? $settings[ $field_id ] : false;
-		$description = isset( $args['description'] ) ? $args['description'] : '';
+	public function render_sync_enabled_field() {
+		$settings = get_option( 'simplyorg_connector_settings', array() );
+		$checked  = isset( $settings['sync_enabled'] ) ? $settings['sync_enabled'] : false;
 
 		printf(
-			'<label><input type="checkbox" id="%s" name="simplyorg_connector_settings[%s]" value="1" %s /> %s</label>',
-			esc_attr( $field_id ),
-			esc_attr( $field_id ),
+			'<label><input type="checkbox" id="sync_enabled" name="simplyorg_connector_settings[sync_enabled]" value="1" %s /> %s</label>',
 			checked( $checked, true, false ),
-			esc_html( $description )
+			esc_html__( 'Enable daily automatic synchronization at 6:00 AM', 'simplyorg-connector' )
+		);
+	}
+
+	/**
+	 * Render debug mode checkbox field.
+	 *
+	 * @since 1.0.3
+	 */
+	public function render_debug_mode_field() {
+		$settings = get_option( 'simplyorg_connector_settings', array() );
+		$checked  = isset( $settings['debug_mode'] ) ? $settings['debug_mode'] : false;
+
+		printf(
+			'<label><input type="checkbox" id="debug_mode" name="simplyorg_connector_settings[debug_mode]" value="1" %s /> %s</label><p class="description">%s</p>',
+			checked( $checked, true, false ),
+			esc_html__( 'Enable debug logging', 'simplyorg-connector' ),
+			esc_html__( 'When enabled, detailed API requests and responses will be logged to the WordPress debug log. Make sure WP_DEBUG_LOG is enabled in wp-config.php.', 'simplyorg-connector' )
 		);
 	}
 

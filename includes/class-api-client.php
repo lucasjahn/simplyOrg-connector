@@ -98,6 +98,8 @@ class SimplyOrg_API_Client {
 			);
 		}
 
+		$this->debug_log( 'Starting authentication' );
+
 		// Step 1: Get CSRF token from the login page.
 		$initial_response = wp_remote_get(
 			$this->base_url . 'de',
@@ -105,6 +107,10 @@ class SimplyOrg_API_Client {
 				'timeout' => 30,
 			)
 		);
+
+		$this->debug_log( 'Initial request completed', array(
+			'status_code' => wp_remote_retrieve_response_code( $initial_response ),
+		) );
 
 		if ( is_wp_error( $initial_response ) ) {
 			return new WP_Error(
@@ -235,6 +241,8 @@ class SimplyOrg_API_Client {
 
 		$this->is_authenticated = true;
 
+		$this->debug_log( 'Authentication successful' );
+
 		return true;
 	}
 
@@ -291,21 +299,32 @@ class SimplyOrg_API_Client {
 			'end'               => $end_date,
 		);
 
-		// Make API request.
+		// Make API request (POST with JSON body).
 		$response = wp_remote_post(
 			$this->base_url . 'de/event-calendar/calendar/fetchdata',
 			array(
 				'timeout' => 60,
 				'headers' => array(
-					'Content-Type'  => 'application/json',
 					'Cookie'        => $this->cookies,
 					'X-CSRF-Token'  => $this->xsrf_token,
+					'Content-Type'  => 'application/json',
+					'Accept'        => 'application/json',
 				),
 				'body'    => wp_json_encode( $body ),
 			)
 		);
 
+		// Debug logging if enabled.
+		$this->debug_log( 'Calendar Events Request', array(
+			'url'     => $this->base_url . 'de/event-calendar/calendar/fetchdata',
+			'body'    => $body,
+			'cookies' => substr( $this->cookies, 0, 100 ) . '...', // Truncate for security.
+		) );
+
 		if ( is_wp_error( $response ) ) {
+			$this->debug_log( 'API request failed (WP_Error)', array(
+				'error' => $response->get_error_message(),
+			) );
 			return new WP_Error(
 				'api_request_failed',
 				sprintf(
@@ -317,7 +336,17 @@ class SimplyOrg_API_Client {
 		}
 
 		$status_code = wp_remote_retrieve_response_code( $response );
+		$this->debug_log( 'API response received', array(
+			'status_code' => $status_code,
+			'headers'     => wp_remote_retrieve_headers( $response )->getAll(),
+		) );
+
 		if ( 200 !== $status_code ) {
+			$response_body = wp_remote_retrieve_body( $response );
+			$this->debug_log( 'API request invalid status', array(
+				'status_code'   => $status_code,
+				'response_body' => substr( $response_body, 0, 500 ),
+			) );
 			return new WP_Error(
 				'api_request_invalid',
 				sprintf(
@@ -359,6 +388,30 @@ class SimplyOrg_API_Client {
 			'not_implemented',
 			__( 'Direct trainer fetching is not yet implemented. Trainers are synced from event data.', 'simplyorg-connector' )
 		);
+	}
+
+	/**
+	 * Debug log helper.
+	 *
+	 * Logs debug information if debug mode is enabled in settings.
+	 *
+	 * @since 1.0.3
+	 * @param string $message Log message.
+	 * @param array  $data    Optional data to log.
+	 */
+	private function debug_log( $message, $data = array() ) {
+		$settings = get_option( 'simplyorg_connector_settings', array() );
+		if ( empty( $settings['debug_mode'] ) ) {
+			return;
+		}
+
+		$log_message = '[SimplyOrg API] ' . $message;
+		if ( ! empty( $data ) ) {
+			$log_message .= ' | Data: ' . wp_json_encode( $data );
+		}
+
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log( $log_message );
 	}
 }
 
