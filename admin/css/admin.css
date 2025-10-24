@@ -1,0 +1,38 @@
+/**
+ * Admin styles for SimplyOrg Connector.
+ *
+ * @package SimplyOrg_Connector
+ * @since 1.0.0
+ */
+
+.simplyorg-connector-settings {
+	max-width: 800px;
+}
+
+.simplyorg-connector-settings .form-table th {
+	width: 200px;
+}
+
+.simplyorg-connector-settings input[type="text"],
+.simplyorg-connector-settings input[type="password"] {
+	width: 100%;
+	max-width: 400px;
+}
+
+.simplyorg-sync-status {
+	margin-top: 20px;
+}
+
+.simplyorg-sync-logs {
+	margin-top: 20px;
+}
+
+.simplyorg-sync-logs table {
+	margin-top: 10px;
+}
+
+.simplyorg-sync-logs td:first-child {
+	width: 180px;
+	white-space: nowrap;
+}
+

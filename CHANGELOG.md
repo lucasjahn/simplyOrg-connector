@@ -1,0 +1,77 @@
+# Changelog
+
+All notable changes to the SimplyOrg Connector plugin will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.0] - 2025-10-24
+
+### Added
+- Initial release of SimplyOrg Connector plugin
+- Full authentication flow with SimplyOrg API (CSRF token, cookies, XSRF token)
+- Event synchronization from SimplyOrg to WordPress seminar custom post type
+- Trainer synchronization with auto-creation functionality
+- Multi-day event grouping by event_id
+- Hash-based change detection for efficient syncing
+- Daily automatic synchronization scheduled at 6:00 AM
+- Manual sync trigger via WordPress admin interface
+- Comprehensive admin settings page for API credentials
+- Sync status dashboard with next scheduled sync time
+- Detailed sync logging with last 100 entries retained
+- ACF field mapping for seminar and trainer post types
+- Draft post creation for new events requiring review
+- Filtering of unwanted events (e.g., "Einmietung" category)
+- Support for multiple dates per event via ACF repeater field
+- Trainer linking via ACF post_object relationship field
+- WordPress coding standards compliance
+- Comprehensive inline documentation with DocBlocks
+- Professional README with usage instructions
+- Security best practices (sanitization, escaping, nonce verification)
+
+### Technical Details
+- Modern object-oriented PHP architecture
+- Singleton pattern for main classes
+- Dependency injection for better testability
+- WP_Error for comprehensive error handling
+- Transients for admin notices
+- WordPress options API for settings storage
+- WordPress cron API for scheduled tasks
+- ACF functions for custom field updates
+
+### Supported Features
+- Event date range syncing (current year + next year)
+- Trainer extraction from event schedule slots
+- Event category mapping to ACF select field
+- Start/end time extraction from schedule slots
+- Multi-day event detection and grouping
+- Duplicate prevention via SimplyOrg ID tracking
+- Update skipping for unchanged content (via hash comparison)
+
+## [Unreleased]
+
+### Planned Features
+- WP-CLI commands for sync operations
+- Bulk event deletion for removed SimplyOrg events
+- Advanced filtering options (by category, trainer, date range)
+- Email notifications for sync failures
+- Sync statistics dashboard widget
+- Export sync logs to CSV
+- Trainer detail syncing (bio, contact info) if API available
+- Event description and content syncing
+- Featured image syncing if available in API
+- Custom sync schedules (hourly, twice daily, etc.)
+- Webhook support for real-time syncing
+- Multi-language support (i18n)
+
+### Known Limitations
+- Trainer details (bio, contact, etc.) are not synced as they're not available in the calendar events API
+- Event content/description is not synced (may require separate API endpoint)
+- Images are not synced (not available in current API response)
+- Only supports one SimplyOrg instance per WordPress installation
+- Requires ACF Pro (not compatible with free ACF version)
+
+---
+
+[1.0.0]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.0
+
