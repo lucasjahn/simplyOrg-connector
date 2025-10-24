@@ -48,6 +48,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.8] - 2025-10-24
+
+### Added
+- Detailed API response structure logging
+- Log response data keys, type, and body existence
+- Log event count from API response
+- Better JSON decode error logging
+
+### Changed
+- Handle case where API response is array directly (no 'body' wrapper key)
+- More informative debug logs for troubleshooting empty responses
+
 ## [1.0.7] - 2025-10-24
 
 ### Fixed
@@ -167,6 +179,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.8]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.8
 [1.0.7]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.7
 [1.0.6]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.6
 [1.0.5]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.5
