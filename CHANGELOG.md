@@ -48,6 +48,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.5] - 2025-10-24
+
+### Added
+- Configurable post type selection in settings for Events and Trainers
+- Post type validation before syncing (checks if post types exist)
+- Manual sync limited to 10 events to avoid browser timeouts
+- Helpful message indicating manual sync limit and full cron sync
+
+### Changed
+- Event and Trainer post types are now configurable via dropdown in settings
+- Default to 'seminar' and 'trainer' but can be changed to any custom post type
+- Full sync via cron still processes all events without limits
+
+### Fixed
+- Prevent timeout issues during manual sync in browser
+- Better error messages when post types don't exist
+
 ## [1.0.4] - 2025-10-24
 
 ### Fixed
@@ -122,6 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.5]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.5
 [1.0.4]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.4
 [1.0.3]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.3
 [1.0.2]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.2
