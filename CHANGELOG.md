@@ -48,6 +48,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.12] - 2025-10-24
+
+### Changed
+- **Multi-day modules now create single date entry**
+  - Multi-day training course modules ("Ausbildungen") now create ONE date entry spanning the entire period
+  - Example: 2-day module (29-30 Oct 09:00-16:00) creates one entry instead of two separate days
+  - Regular multi-day events still get separate date entries for each day
+  - Logic: If `is_module` AND has multiple days → Single combined date entry
+  - Prevents unnecessary date duplication for modules while preserving individual day entries for regular seminars
+
 ## [1.0.11] - 2025-10-24
 
 ### Fixed
@@ -226,6 +236,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.12]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.12
 [1.0.11]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.11
 [1.0.10]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.10
 [1.0.9]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.9
