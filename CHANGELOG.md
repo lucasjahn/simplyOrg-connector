@@ -48,6 +48,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.1] - 2025-10-24
+
+### Fixed
+- Fixed authentication flow to match SimplyOrg API requirements
+- Accept 204 status code for successful login (SimplyOrg returns 204 No Content)
+- Extract XSRF token from first cookie value instead of searching by cookie name
+- Use raw set-cookie headers and join with '; ' to match exact API requirements
+- Improved cookie handling to match N8N workflow implementation
+
+### Added
+- Automatic credential validation when saving settings
+- Success/error messages displayed immediately after saving credentials
+- Green checkmark message when credentials are validated successfully
+- Detailed error messages when credential validation fails
+
 ## [Unreleased]
 
 ### Planned Features
@@ -73,5 +88,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.1]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.1
 [1.0.0]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.0
 
