@@ -48,6 +48,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.13] - 2025-10-24
+
+### Added
+- **AJAX batch synchronization** with real-time progress indicator
+  - Processes 50 events per batch to avoid browser timeouts
+  - Real-time progress bar showing percentage complete
+  - Status display: "Syncing X of Y events..."
+  - Live counters for Created, Updated, and Skipped events
+  - Automatic continuation between batches
+  - No manual intervention needed during sync
+  - Session management via WordPress transients
+
+### Changed
+- Manual sync now uses AJAX instead of form POST
+- Sync button disabled during sync to prevent duplicate runs
+- Full event list synced (no 10-event limit for manual sync)
+- Progress indicator replaces simple "Sync Now" button workflow
+
+### Technical
+- New `admin.js` with jQuery-based AJAX handler
+- New `handle_batch_sync()` AJAX endpoint in admin class
+- Public wrapper methods for event syncer (`sync_single_event_public`, `normalize_events`)
+- Events stored in transient between batches (expires after 1 hour)
+- Batch size configurable (default: 50 events)
+
 ## [1.0.12] - 2025-10-24
 
 ### Changed
@@ -236,6 +261,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.13]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.13
 [1.0.12]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.12
 [1.0.11]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.11
 [1.0.10]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.10
