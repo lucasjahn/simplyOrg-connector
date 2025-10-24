@@ -145,7 +145,7 @@ class SimplyOrg_Event_Syncer {
 	 * @param array $events Raw events from API.
 	 * @return array Normalized events grouped by event_id.
 	 */
-	private function normalize_events( $events ) {
+	public function normalize_events( $events ) {
 		$event_groups = array();
 		$skipped      = array(
 			'no_data'      => 0,
@@ -291,6 +291,17 @@ class SimplyOrg_Event_Syncer {
 		$this->log( sprintf( 'Grouped into %d unique events', count( $event_groups ) ) );
 
 		return array_values( $event_groups );
+	}
+
+	/**
+	 * Public wrapper for sync_single_event.
+	 *
+	 * @since 1.0.13
+	 * @param array $event_data Normalized event data.
+	 * @return string|WP_Error 'created', 'updated', or 'skipped' on success, WP_Error on failure.
+	 */
+	public function sync_single_event_public( $event_data ) {
+		return $this->sync_single_event( $event_data );
 	}
 
 	/**

@@ -67,6 +67,7 @@ class SimplyOrg_Admin {
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_post_simplyorg_manual_sync', array( $this, 'handle_manual_sync' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		add_action( 'wp_ajax_simplyorg_batch_sync', array( $this, 'handle_batch_sync' ) );
 	}
 
 	/**
@@ -505,14 +506,26 @@ class SimplyOrg_Admin {
 
 			<hr />
 
-			<h2><?php esc_html_e( 'Manual Sync', 'simplyorg-connector' ); ?></h2>
-			<p><?php esc_html_e( 'Click the button below to manually trigger a synchronization of events and trainers from SimplyOrg.', 'simplyorg-connector' ); ?></p>
+		<h2><?php esc_html_e( 'Manual Sync', 'simplyorg-connector' ); ?></h2>
+		<p><?php esc_html_e( 'Click the button below to manually trigger a synchronization of events and trainers from SimplyOrg. The sync processes 50 events at a time to avoid timeouts.', 'simplyorg-connector' ); ?></p>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="simplyorg_manual_sync" />
-				<?php wp_nonce_field( 'simplyorg_manual_sync', 'simplyorg_sync_nonce' ); ?>
-				<?php submit_button( __( 'Sync Now', 'simplyorg-connector' ), 'primary', 'submit', false ); ?>
-			</form>
+		<button type="button" id="simplyorg-sync-button" class="button button-primary">
+			<?php esc_html_e( 'Sync Now', 'simplyorg-connector' ); ?>
+		</button>
+
+		<div id="simplyorg-sync-progress" style="display: none; margin-top: 20px;">
+			<div style="background: #f0f0f1; border: 1px solid #c3c4c7; border-radius: 4px; padding: 20px;">
+				<h3 style="margin-top: 0;"><?php esc_html_e( 'Sync in Progress...', 'simplyorg-connector' ); ?></h3>
+				<div id="simplyorg-sync-status" style="margin-bottom: 10px; font-weight: bold;"></div>
+				<div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; height: 30px; position: relative; overflow: hidden;">
+					<div id="simplyorg-sync-progress-bar" style="background: #2271b1; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+					<div id="simplyorg-sync-percentage" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; color: #000;">0%</div>
+				</div>
+				<div id="simplyorg-sync-details" style="margin-top: 10px; font-size: 13px; color: #646970;"></div>
+			</div>
+		</div>
+
+		<div id="simplyorg-sync-result" style="display: none; margin-top: 20px;"></div>
 
 			<hr />
 
@@ -731,6 +744,112 @@ class SimplyOrg_Admin {
 			SIMPLYORG_CONNECTOR_PLUGIN_URL . 'admin/css/admin.css',
 			array(),
 			SIMPLYORG_CONNECTOR_VERSION
+		);
+
+		wp_enqueue_script(
+			'simplyorg-connector-admin',
+			SIMPLYORG_CONNECTOR_PLUGIN_URL . 'admin/js/admin.js',
+			array( 'jquery' ),
+			SIMPLYORG_CONNECTOR_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			'simplyorg-connector-admin',
+			'simplyorgAdmin',
+			array(
+				'nonce' => wp_create_nonce( 'simplyorg_batch_sync' ),
+			)
+		);
+	}
+
+	/**
+	 * Handle AJAX batch sync request.
+	 *
+	 * @since 1.0.13
+	 */
+	public function handle_batch_sync() {
+		// Check nonce.
+		check_ajax_referer( 'simplyorg_batch_sync', 'nonce' );
+
+		// Check permissions.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
+		}
+
+		$offset = isset( $_POST['offset'] ) ? intval( $_POST['offset'] ) : 0;
+		$batch_size = 50;
+
+		// Get date range from settings.
+		$settings   = get_option( 'simplyorg_connector_settings', array() );
+		$start_date = isset( $settings['sync_start_date'] ) ? $settings['sync_start_date'] : gmdate( 'Y-m-d' );
+		$end_date   = isset( $settings['sync_end_date'] ) ? $settings['sync_end_date'] : gmdate( 'Y-12-31', strtotime( '+1 year' ) );
+
+		// Fetch all events (only on first batch).
+		if ( 0 === $offset ) {
+			// Store events in transient for subsequent batches.
+			$api_client = new SimplyOrg_API_Client();
+			$events = $api_client->fetch_calendar_events( $start_date, $end_date );
+
+			if ( is_wp_error( $events ) ) {
+				wp_send_json_error( $events->get_error_message() );
+			}
+
+			// Normalize and filter events.
+			$normalized_events = $this->event_syncer->normalize_events( $events );
+
+			// Store in transient (expires in 1 hour).
+			set_transient( 'simplyorg_batch_sync_events', $normalized_events, HOUR_IN_SECONDS );
+		}
+
+		// Get events from transient.
+		$all_events = get_transient( 'simplyorg_batch_sync_events' );
+		if ( false === $all_events ) {
+			wp_send_json_error( 'Sync session expired. Please start again.' );
+		}
+
+		$total = count( $all_events );
+		$batch_events = array_slice( $all_events, $offset, $batch_size );
+
+		$created = 0;
+		$updated = 0;
+		$skipped = 0;
+		$errors = array();
+
+		// Process batch.
+		foreach ( $batch_events as $event ) {
+			$result = $this->event_syncer->sync_single_event_public( $event );
+
+			if ( is_wp_error( $result ) ) {
+				$errors[] = $event['title'] . ': ' . $result->get_error_message();
+			} elseif ( 'created' === $result ) {
+				$created++;
+			} elseif ( 'updated' === $result ) {
+				$updated++;
+			} elseif ( 'skipped' === $result ) {
+				$skipped++;
+			}
+		}
+
+		$processed = $offset + count( $batch_events );
+		$done = $processed >= $total;
+
+		// Clean up transient if done.
+		if ( $done ) {
+			delete_transient( 'simplyorg_batch_sync_events' );
+		}
+
+		wp_send_json_success(
+			array(
+				'total'       => $total,
+				'processed'   => $processed,
+				'created'     => $created,
+				'updated'     => $updated,
+				'skipped'     => $skipped,
+				'errors'      => $errors,
+				'done'        => $done,
+				'next_offset' => $processed,
+			)
 		);
 	}
 }
