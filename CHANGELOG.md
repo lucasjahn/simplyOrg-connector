@@ -48,6 +48,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.11] - 2025-10-24
+
+### Fixed
+- **Duplicate dates issue** for multi-day events
+  - Now uses `schedule_date` (actual day) instead of `event_startdate`/`event_enddate` (overall range)
+  - Each day of a multi-day event now has its correct individual date
+  - Example: 2-day event (29-30 Oct) now shows "29 Oct 09:00-16:00" and "30 Oct 09:00-16:00" instead of "29-30 Oct" twice
+
+### Added
+- **Multiple trainers support**
+  - Automatically splits comma-separated trainer names and IDs
+  - Creates/links all trainers to the event
+  - Example: "Katrin Gühne, Torsten Sandau" with IDs "11,32" now creates and links both trainers
+
+- **Module detection**
+  - Automatically detects "Ausbildungen" (training courses) category
+  - Detects "Modul" keyword in event name
+  - Sets `modul` field to `true` in ACF dates
+  - Prevents individual registration for modules that are part of longer training courses
+
 ## [1.0.10] - 2025-10-24
 
 ### Added
@@ -206,6 +226,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.11]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.11
 [1.0.10]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.10
 [1.0.9]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.9
 [1.0.8]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.8
