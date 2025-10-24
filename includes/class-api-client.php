@@ -283,7 +283,7 @@ class SimplyOrg_API_Client {
 			$end_date = gmdate( 'Y' ) . '-12-31';
 		}
 
-		// Build request body.
+		// Prepare request body - match N8N exactly with string literals.
 		$body = array(
 			'event_id'          => 'null',
 			'location_id'       => 'null',
