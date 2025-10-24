@@ -48,6 +48,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.4] - 2025-10-24
+
+### Fixed
+- Fixed API request body to use string literals 'null' and 'undefined'
+- Match exact N8N request body format
+- SimplyOrg API expects filter values as strings, not JSON null/undefined
+- Should resolve 405 Method Not Allowed error
+
 ## [1.0.3] - 2025-10-24
 
 ### Added
@@ -114,6 +122,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.4]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.4
 [1.0.3]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.3
 [1.0.2]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.2
 [1.0.1]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.1
