@@ -48,6 +48,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.9] - 2025-10-24
+
+### Fixed
+- **Trainer post title** now uses trainer_name instead of ID
+- **End date/time** now correctly set for same-day events
+- Previously only set end date if different from start date
+- Now sets end date/time even for same-day events with different times (e.g., 09:00-16:00)
+- Fix create_trainer method signature to accept simplyorg_trainer_id parameter
+
+### Changed
+- Accept header updated to match N8N format exactly
+- Timeout increased to 300 seconds (matching N8N)
+
 ## [1.0.8] - 2025-10-24
 
 ### Added
@@ -179,6 +192,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.9]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.9
 [1.0.8]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.8
 [1.0.7]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.7
 [1.0.6]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.6
