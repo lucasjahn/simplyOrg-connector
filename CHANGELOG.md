@@ -48,6 +48,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate prevention via SimplyOrg ID tracking
 - Update skipping for unchanged content (via hash comparison)
 
+## [1.0.3] - 2025-10-24
+
+### Added
+- Debug mode toggle in settings page
+- Comprehensive debug logging throughout API client
+- Logs authentication flow, API requests, and responses
+- Detailed error logging for troubleshooting 405 and other API errors
+- Debug logs written to WordPress error_log when enabled
+
+### Fixed
+- Added Accept header to API requests
+- Fixed settings field registration for sync and debug options
+- Improved API request headers to match N8N workflow
+
+### Changed
+- Debug logging can be enabled/disabled via settings page
+- Requires WP_DEBUG_LOG enabled in wp-config.php for logging
+
 ## [1.0.2] - 2025-10-24
 
 ### Fixed
@@ -96,6 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.3]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.3
 [1.0.2]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.2
 [1.0.1]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.1
 [1.0.0]: https://github.com/lucasjahn/simplyOrg-connector/releases/tag/v1.0.0
