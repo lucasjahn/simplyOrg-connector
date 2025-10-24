@@ -120,7 +120,7 @@ class SimplyOrg_Trainer_Syncer {
 	 * @param string $trainer_name         Trainer full name.
 	 * @return int|WP_Error Post ID on success, WP_Error on failure.
 	 */
-	private function create_trainer( $trainer_name ) {
+	private function create_trainer( $simplyorg_trainer_id, $trainer_name ) {
 		// Get configured post type.
 		$settings          = get_option( 'simplyorg_connector_settings', array() );
 		$trainer_post_type = isset( $settings['trainer_post_type'] ) ? $settings['trainer_post_type'] : 'trainer';

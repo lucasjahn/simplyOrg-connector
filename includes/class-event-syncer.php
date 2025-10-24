@@ -368,8 +368,8 @@ class SimplyOrg_Event_Syncer {
 				$from_datetime = $date['start_date'] . ' ' . $date['start_time'];
 				$bis_datetime  = '';
 
-				// Only set "bis" if it's a different day or spans multiple days.
-				if ( $date['end_date'] !== $date['start_date'] ) {
+				// Set "bis" if end date exists (even for same-day events with different times).
+				if ( ! empty( $date['end_date'] ) ) {
 					$bis_datetime = $date['end_date'] . ' ' . $date['end_time'];
 				}
 
