@@ -283,8 +283,8 @@ class SimplyOrg_API_Client {
 			$end_date = gmdate( 'Y' ) . '-12-31';
 		}
 
-		// Prepare request body - match N8N exactly with string literals.
-		$body = array(
+		// Prepare query parameters - match browser request exactly.
+		$query_params = array(
 			'event_id'          => 'null',
 			'location_id'       => 'null',
 			'event_category_id' => 'null',
@@ -299,27 +299,29 @@ class SimplyOrg_API_Client {
 			'end'               => $end_date,
 		);
 
-		// Make API request (POST with JSON body).
-		$response = wp_remote_post(
-			$this->base_url . 'de/event-calendar/calendar/fetchdata',
-			array(
-				'timeout' => 60,
-				'headers' => array(
-					'Cookie'        => $this->cookies,
-					'X-CSRF-Token'  => $this->xsrf_token,
-					'Content-Type'  => 'application/json',
-					'Accept'        => 'application/json',
-				),
-				'body'    => wp_json_encode( $body ),
-			)
-		);
+		// Build URL with query string.
+		$url = add_query_arg( $query_params, $this->base_url . 'de/event-calendar/calendar/fetchdata' );
 
 		// Debug logging if enabled.
 		$this->debug_log( 'Calendar Events Request', array(
-			'url'     => $this->base_url . 'de/event-calendar/calendar/fetchdata',
-			'body'    => $body,
+			'url'     => $url,
+			'method'  => 'GET',
 			'cookies' => substr( $this->cookies, 0, 100 ) . '...', // Truncate for security.
 		) );
+
+		// Make API request (GET with query parameters).
+		$response = wp_remote_get(
+			$url,
+			array(
+				'timeout' => 60,
+				'headers' => array(
+					'Cookie'           => $this->cookies,
+					'X-CSRF-Token'     => $this->xsrf_token,
+					'Accept'           => 'application/json, text/javascript, */*; q=0.01',
+					'X-Requested-With' => 'XMLHttpRequest',
+				),
+			)
+		);
 
 		if ( is_wp_error( $response ) ) {
 			$this->debug_log( 'API request failed (WP_Error)', array(
