@@ -148,14 +148,14 @@ class SimplyOrg_Admin {
 			'simplyorg_sync_settings',
 			__( 'Sync Settings', 'simplyorg-connector' ),
 			array( $this, 'render_sync_settings_section' ),
-			'simplyorg_connector'
+			'simplyorg-connector'
 		);
 
 		add_settings_field(
 			'sync_enabled',
 			__( 'Enable Automatic Sync', 'simplyorg-connector' ),
 			array( $this, 'render_sync_enabled_field' ),
-			'simplyorg_connector',
+			'simplyorg-connector',
 			'simplyorg_sync_settings'
 		);
 
@@ -163,7 +163,7 @@ class SimplyOrg_Admin {
 			'debug_mode',
 			__( 'Debug Mode', 'simplyorg-connector' ),
 			array( $this, 'render_debug_mode_field' ),
-			'simplyorg_connector',
+			'simplyorg-connector',
 			'simplyorg_sync_settings'
 		);
 
@@ -171,7 +171,7 @@ class SimplyOrg_Admin {
 			'event_post_type',
 			__( 'Event Post Type', 'simplyorg-connector' ),
 			array( $this, 'render_event_post_type_field' ),
-			'simplyorg_connector',
+			'simplyorg-connector',
 			'simplyorg_sync_settings'
 		);
 
@@ -179,7 +179,7 @@ class SimplyOrg_Admin {
 			'trainer_post_type',
 			__( 'Trainer Post Type', 'simplyorg-connector' ),
 			array( $this, 'render_trainer_post_type_field' ),
-			'simplyorg_connector',
+			'simplyorg-connector',
 			'simplyorg_sync_settings'
 		);
 	}

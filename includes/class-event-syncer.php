@@ -70,19 +70,29 @@ class SimplyOrg_Event_Syncer {
 	 * @return array|WP_Error Sync results on success, WP_Error on failure.
 	 */
 	public function sync_events( $start_date = null, $end_date = null, $limit = null ) {
+		$this->log( sprintf( 'Starting sync: start_date=%s, end_date=%s, limit=%s', $start_date, $end_date, $limit ? $limit : 'none' ) );
+
 		// Fetch events from API.
+		$this->log( 'Fetching events from API...' );
 		$events = $this->api_client->fetch_calendar_events( $start_date, $end_date );
 
 		if ( is_wp_error( $events ) ) {
+			$this->log( 'API fetch failed: ' . $events->get_error_message() );
 			return $events;
 		}
 
+		$this->log( sprintf( 'Fetched %d raw events from API', count( $events ) ) );
+
 		// Filter and normalize events.
+		$this->log( 'Normalizing and filtering events...' );
 		$normalized_events = $this->normalize_events( $events );
+		$this->log( sprintf( 'After normalization: %d events', count( $normalized_events ) ) );
 
 		// Apply limit if specified (for manual sync to avoid timeouts).
 		if ( null !== $limit && $limit > 0 ) {
+			$this->log( sprintf( 'Applying limit of %d events for manual sync', $limit ) );
 			$normalized_events = array_slice( $normalized_events, 0, $limit );
+			$this->log( sprintf( 'Processing %d events after limit', count( $normalized_events ) ) );
 		}
 
 		// Sync results.
@@ -94,27 +104,35 @@ class SimplyOrg_Event_Syncer {
 		);
 
 		// Process each normalized event.
-		foreach ( $normalized_events as $event_data ) {
+		$this->log( sprintf( 'Processing %d events...', count( $normalized_events ) ) );
+		foreach ( $normalized_events as $index => $event_data ) {
+			$this->log( sprintf( 'Event %d/%d: %s (ID: %s)', $index + 1, count( $normalized_events ), $event_data['title'], $event_data['simplyorg_id'] ) );
 			$result = $this->sync_single_event( $event_data );
 
 			if ( is_wp_error( $result ) ) {
-				$results['errors'][] = sprintf(
+				$error_msg = sprintf(
 					/* translators: 1: Event title, 2: Error message */
 					__( 'Failed to sync event "%1$s": %2$s', 'simplyorg-connector' ),
 					$event_data['title'],
 					$result->get_error_message()
 				);
+				$results['errors'][] = $error_msg;
+				$this->log( 'ERROR: ' . $error_msg );
 			} else {
 				if ( 'created' === $result ) {
 					$results['created']++;
+					$this->log( 'Result: CREATED' );
 				} elseif ( 'updated' === $result ) {
 					$results['updated']++;
+					$this->log( 'Result: UPDATED' );
 				} else {
 					$results['skipped']++;
+					$this->log( 'Result: SKIPPED (no changes)' );
 				}
 			}
 		}
 
+		$this->log( sprintf( 'Sync complete: Created=%d, Updated=%d, Skipped=%d, Errors=%d', $results['created'], $results['updated'], $results['skipped'], count( $results['errors'] ) ) );
 		return $results;
 	}
 
@@ -129,20 +147,28 @@ class SimplyOrg_Event_Syncer {
 	 */
 	private function normalize_events( $events ) {
 		$event_groups = array();
+		$skipped      = array(
+			'no_data'      => 0,
+			'einmietung'   => 0,
+			'no_trainer'   => 0,
+		);
 
 		foreach ( $events as $event ) {
 			// Skip events without necessary data.
 			if ( empty( $event['event_id'] ) || empty( $event['title'] ) ) {
+				$skipped['no_data']++;
 				continue;
 			}
 
 			// Skip "Einmietung" (room rental) events.
 			if ( isset( $event['event_category_name'] ) && 'Einmietung' === $event['event_category_name'] ) {
+				$skipped['einmietung']++;
 				continue;
 			}
 
 			// Skip events without trainer.
 			if ( empty( $event['trainer_name'] ) ) {
+				$skipped['no_trainer']++;
 				continue;
 			}
 
@@ -202,6 +228,9 @@ class SimplyOrg_Event_Syncer {
 				}
 			);
 		}
+
+		$this->log( sprintf( 'Filtered events: Skipped %d (no data), %d (Einmietung), %d (no trainer)', $skipped['no_data'], $skipped['einmietung'], $skipped['no_trainer'] ) );
+		$this->log( sprintf( 'Grouped into %d unique events', count( $event_groups ) ) );
 
 		return array_values( $event_groups );
 	}
@@ -354,6 +383,21 @@ class SimplyOrg_Event_Syncer {
 			}
 
 			update_field( 'dates', $dates_data, $post_id );
+		}
+	}
+
+	/**
+	 * Log message if debug mode is enabled.
+	 *
+	 * @since 1.0.7
+	 * @param string $message Log message.
+	 */
+	private function log( $message ) {
+		$settings = get_option( 'simplyorg_connector_settings', array() );
+		$debug    = isset( $settings['debug_mode'] ) ? $settings['debug_mode'] : false;
+
+		if ( $debug && defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
+			error_log( '[SimplyOrg Event Syncer] ' . $message );
 		}
 	}
 }
