@@ -179,29 +179,58 @@ class SimplyOrg_Event_Syncer {
 				// Clean title by removing "Tag - X" suffix.
 				$clean_title = preg_replace( '/ Tag - \d+$/', '', $event['title'] );
 
+				// Handle multiple trainers (comma-separated).
+				$trainer_names = array();
+				$trainer_ids   = array();
+
+				if ( ! empty( $event['trainer_name'] ) ) {
+					// Split by comma and trim whitespace.
+					$trainer_names = array_map( 'trim', explode( ',', $event['trainer_name'] ) );
+				}
+
+				// Extract trainer IDs from schedule_slot.
+				if ( isset( $event['schedule_slot'][0]['trainer'] ) ) {
+					$trainer_ids_str = $event['schedule_slot'][0]['trainer'];
+					// Split by comma if multiple trainers.
+					if ( strpos( $trainer_ids_str, ',' ) !== false ) {
+						$trainer_ids = array_map( 'intval', explode( ',', $trainer_ids_str ) );
+					} else {
+						$trainer_ids = array( intval( $trainer_ids_str ) );
+					}
+				}
+
 				$event_groups[ $event_id ] = array(
 					'simplyorg_id'   => $event_id,
 					'title'          => $clean_title,
 					'event_name'     => isset( $event['event_name'] ) ? $event['event_name'] : '',
 					'event_category' => isset( $event['event_category_name'] ) ? $event['event_category_name'] : '',
-					'trainer_name'   => $event['trainer_name'],
-					'trainer_id'     => null,
+					'trainer_names'  => $trainer_names,
+					'trainer_ids'    => $trainer_ids,
 					'dates'          => array(),
 				);
 			}
 
-			// Extract trainer ID from schedule_slot.
-			if ( isset( $event['schedule_slot'][0]['trainer'] ) ) {
-				$event_groups[ $event_id ]['trainer_id'] = intval( $event['schedule_slot'][0]['trainer'] );
+			// Add date information.
+			// Use schedule_date for the actual day (not event_startdate which is the overall range).
+			$actual_date = isset( $event['schedule_date'] ) ? $event['schedule_date'] : $event['event_startdate'];
+
+			// Detect if this is a module (part of "Ausbildungen" training course).
+			$is_module = false;
+			if ( isset( $event['event_category_name'] ) && 'Ausbildungen' === $event['event_category_name'] ) {
+				$is_module = true;
+			}
+			// Also check if "Modul" is in the title.
+			if ( isset( $event['event_name'] ) && stripos( $event['event_name'], 'Modul' ) !== false ) {
+				$is_module = true;
 			}
 
-			// Add date information.
 			$date_entry = array(
-				'start_date' => isset( $event['event_startdate'] ) ? $event['event_startdate'] : '',
-				'end_date'   => isset( $event['event_enddate'] ) ? $event['event_enddate'] : '',
+				'start_date' => $actual_date,
+				'end_date'   => $actual_date, // Same day for individual schedule entries.
 				'start_time' => '09:00:00',
 				'end_time'   => '16:00:00',
 				'day_number' => isset( $event['event_days'] ) ? intval( $event['event_days'] ) : 1,
+				'is_module'  => $is_module,
 			);
 
 			// Extract time from schedule_slot.
@@ -346,16 +375,29 @@ class SimplyOrg_Event_Syncer {
 			update_field( 'seminar-typ', $event_data['event_category'], $post_id );
 		}
 
-		// Find or create trainer and link.
-		if ( ! empty( $event_data['trainer_id'] ) && ! empty( $event_data['trainer_name'] ) ) {
-			$trainer_post_id = $this->trainer_syncer->find_or_create_trainer(
-				$event_data['trainer_id'],
-				$event_data['trainer_name']
-			);
+		// Find or create trainers and link (supports multiple trainers).
+		if ( ! empty( $event_data['trainer_ids'] ) && ! empty( $event_data['trainer_names'] ) ) {
+			$trainer_post_ids = array();
 
-			if ( ! is_wp_error( $trainer_post_id ) ) {
-				// ACF expects an array of post IDs for post_object field with multiple enabled.
-				update_field( 'trainer', array( $trainer_post_id ), $post_id );
+			// Loop through each trainer.
+			foreach ( $event_data['trainer_ids'] as $index => $trainer_id ) {
+				$trainer_name = isset( $event_data['trainer_names'][ $index ] ) ? $event_data['trainer_names'][ $index ] : '';
+
+				if ( ! empty( $trainer_name ) ) {
+					$trainer_post_id = $this->trainer_syncer->find_or_create_trainer(
+						$trainer_id,
+						$trainer_name
+					);
+
+					if ( ! is_wp_error( $trainer_post_id ) ) {
+						$trainer_post_ids[] = $trainer_post_id;
+					}
+				}
+			}
+
+			// Update trainer field with all trainer post IDs.
+			if ( ! empty( $trainer_post_ids ) ) {
+				update_field( 'trainer', $trainer_post_ids, $post_id );
 			}
 		}
 
@@ -377,7 +419,7 @@ class SimplyOrg_Event_Syncer {
 					'from'       => $from_datetime,
 					'bis'        => $bis_datetime,
 					'hinweis'    => '',
-					'modul'      => false,
+					'modul'      => isset( $date['is_module'] ) ? $date['is_module'] : false,
 					'modul_name' => '',
 				);
 			}
